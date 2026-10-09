@@ -1,10 +1,24 @@
-{
-  "compilerOptions": {
-    "composite": true,
-    "skipLibCheck": true,
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "allowSyntheticDefaultImports": true
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
   },
-  "include": ["vite.config.ts"]
-}
+  build: {
+    outDir: '../plugin/personnel-contract-manager/admin-dist',
+    emptyOutDir: true,
+  },
+  server: {
+    proxy: {
+      '/wp-json': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
+});

@@ -1,17 +1,37 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import App from './App';
-import './styles.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import Employees from './pages/Employees';
+import Contracts from './pages/Contracts';
+import Payroll from './pages/Payroll';
+import Reports from './pages/Reports';
+import Payments from './pages/Payments';
+import Audit from './pages/Audit';
+import { useAuthStore } from './stores/authStore';
 
-const queryClient = new QueryClient();
+function App() {
+  const { verifyAuth } = useAuthStore();
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
-  </React.StrictMode>,
-);
+  useEffect(() => {
+    verifyAuth();
+  }, [verifyAuth]);
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="employees" element={<Employees />} />
+          <Route path="contracts" element={<Contracts />} />
+          <Route path="payroll" element={<Payroll />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="audit" element={<Audit />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
