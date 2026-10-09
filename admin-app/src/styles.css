@@ -1,0 +1,57 @@
+const menu = [
+  'داشبورد',
+  'پرسنل',
+  'قراردادها',
+  'حقوق و دستمزد',
+  'کارکرد',
+  'پرداخت‌ها',
+  'اسناد',
+  'گزارش‌ها',
+  'اعلان‌ها',
+  'کاربران و دسترسی‌ها',
+  'مقررات حقوق و دستمزد',
+  'Audit Logs',
+  'تنظیمات',
+];
+
+export default function App() {
+  return (
+    <div className="pcm-app">
+      <aside className="sidebar">
+        <div className="brand">PCM</div>
+        <nav>
+          {menu.map((item) => (
+            <button key={item} className="nav-item" type="button">
+              {item}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <main className="content">
+        <header className="topbar">
+          <h1>داشبورد</h1>
+        </header>
+
+        <section className="stats-grid">
+          <div className="stat-card">
+            <span>کل پرسنل</span>
+            <strong>128</strong>
+          </div>
+          <div className="stat-card">
+            <span>پرسنل فعال</span>
+            <strong>112</strong>
+          </div>
+          <div className="stat-card">
+            <span>قراردادهای فعال</span>
+            <strong>94</strong>
+          </div>
+          <div className="stat-card">
+            <span>حقوق ماه جاری</span>
+            <strong>۲,۸۴۰,۰۰۰,۰۰۰</strong>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}

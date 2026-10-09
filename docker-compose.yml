@@ -1,0 +1,53 @@
+version: '3.9'
+
+services:
+  wordpress:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pcm-wordpress
+    depends_on:
+      - mysql
+    ports:
+      - "8000:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DEBUG: "false"
+      WORDPRESS_TABLE_PREFIX: wp_
+    volumes:
+      - ./wp-content:/var/www/html/wp-content
+      - ./plugin:/var/www/html/wp-content/plugins
+      - ./theme:/var/www/html/wp-content/themes
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: pcm-mysql
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+
+  admin-app:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./admin-app:/app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/wp-json/pcm/v1
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

@@ -1,0 +1,85 @@
+<?php
+namespace PCM\API;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+final class RestBootstrap
+{
+    public function register(): void
+    {
+        $namespace = 'pcm/v1';
+
+        register_rest_route($namespace, '/dashboard', [
+            'methods' => 'GET',
+            'callback' => [$this, 'dashboard'],
+            'permission_callback' => [$this, 'permission_check'],
+        ]);
+
+        register_rest_route($namespace, '/employees', [
+            'methods' => ['GET', 'POST'],
+            'callback' => [$this, 'employees'],
+            'permission_callback' => [$this, 'permission_check'],
+        ]);
+
+        register_rest_route($namespace, '/contracts', [
+            'methods' => ['GET', 'POST'],
+            'callback' => [$this, 'contracts'],
+            'permission_callback' => [$this, 'permission_check'],
+        ]);
+    }
+
+    public function permission_check(): bool
+    {
+        if (!is_user_logged_in()) {
+            return false;
+        }
+
+        if (current_user_can('pcm_view_reports') || current_user_can('pcm_manage_employees') || current_user_can('pcm_manage_payroll') || current_user_can('administrator')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function dashboard(\WP_REST_Request $request): \WP_REST_Response
+    {
+        return new \WP_REST_Response([
+            'success' => true,
+            'data' => [
+                'total_employees' => 0,
+                'active_employees' => 0,
+                'active_contracts' => 0,
+                'monthly_payroll' => 0,
+                'pending_payments' => 0,
+            ],
+        ], 200);
+    }
+
+    public function employees(\WP_REST_Request $request): \WP_REST_Response
+    {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'pcm_employees';
+        $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$table} WHERE deleted_at IS NULL LIMIT %d", 50), ARRAY_A);
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'data' => $rows,
+        ], 200);
+    }
+
+    public function contracts(\WP_REST_Request $request): \WP_REST_Response
+    {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'pcm_contracts';
+        $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$table} WHERE deleted_at IS NULL LIMIT %d", 50), ARRAY_A);
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'data' => $rows,
+        ], 200);
+    }
+}

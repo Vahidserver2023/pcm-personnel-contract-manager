@@ -1,0 +1,21 @@
+# Ignore local environment and build artifacts
+.env
+.env.local
+.env.*
+!.env.example
+node_modules/
+dist/
+vendor/
+.git/
+.DS_Store
+wp-content/uploads/
+*.log
+coverage/
+.phpunit.result.cache
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+Thumbs.db
