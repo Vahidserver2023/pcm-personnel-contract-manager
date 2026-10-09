@@ -1,56 +1,133 @@
-# pcm-personnel-contract-manager
+<?php
+namespace PCM\API;
 
-Professional Human Resources, Contracts, Payroll, and Personnel Payment Management System for WordPress.
+if (!defined('ABSPATH')) {
+    exit;
+}
 
-## Overview
-This repository contains a Production-oriented WordPress plugin, a dedicated corporate theme, and a React + TypeScript admin app for HR operations.
+final class RestBootstrap
+{
+    public function register(): void
+    {
+        $namespace = 'pcm/v1';
 
-## Project structure
+        register_rest_route($namespace, '/dashboard', [
+            'methods' => 'GET',
+            'callback' => [$this, 'dashboard'],
+            'permission_callback' => [$this, 'permission_check'],
+        ]);
 
-```text
-pcm-project/
-├── theme/
-│   └── pcm-corporate/
-├── plugin/
-│   └── personnel-contract-manager/
-├── admin-app/
-├── docker/
-├── Dockerfile
-├── docker-compose.yml
-├── .env.example
-├── README.md
-└── .gitignore
-```
+        register_rest_route($namespace, '/employees', [
+            'methods' => ['GET', 'POST'],
+            'callback' => [$this, 'employees'],
+            'permission_callback' => [$this, 'permission_check'],
+            'args' => [
+                'employee_code' => ['sanitize_callback' => 'sanitize_text_field'],
+                'first_name' => ['sanitize_callback' => 'sanitize_text_field'],
+                'last_name' => ['sanitize_callback' => 'sanitize_text_field'],
+                'email' => ['sanitize_email'],
+            ],
+        ]);
 
-## Included
-- WordPress plugin skeleton for HR/Payroll operations
-- Custom database schema scaffolding
-- REST API route bootstrap
-- User capability and permissions framework
-- Admin SPA bootstrap on React/Vite
-- Corporate WordPress theme for public-facing pages
-- Docker setup for local development
+        register_rest_route($namespace, '/contracts', [
+            'methods' => ['GET', 'POST'],
+            'callback' => [$this, 'contracts'],
+            'permission_callback' => [$this, 'permission_check'],
+        ]);
 
-## Quick start
+        register_rest_route($namespace, '/pay-items', [
+            'methods' => ['GET', 'POST'],
+            'callback' => [$this, 'pay_items'],
+            'permission_callback' => [$this, 'permission_check'],
+        ]);
+    }
 
-```bash
-docker compose up --build
-```
+    public function permission_check(\WP_REST_Request $request): bool
+    {
+        if (!is_user_logged_in()) {
+            return false;
+        }
 
-Then open:
-- WordPress: http://localhost:8000
-- Admin app: http://localhost:5173
+        if (!wp_verify_nonce($request->get_header('X-WP-Nonce') ?: '', 'wp_rest')) {
+            return false;
+        }
 
-## Requirements
-- Docker
-- Docker Compose
-- Node.js 20+
-- PHP 8.2+
+        if (
+            current_user_can('administrator') ||
+            current_user_can('pcm_manage_employees') ||
+            current_user_can('pcm_manage_contracts') ||
+            current_user_can('pcm_manage_payroll') ||
+            current_user_can('pcm_view_reports')
+        ) {
+            return true;
+        }
 
-## Production notes
-- Set `WP_DEBUG=false` in production
-- Do not hard-code secrets in source
-- Use environment variables and Railway secrets
+        return false;
+    }
 
-## Important
-This repository is a solid production-ready foundation. The system design supports secured HR workflows, payroll versioning, employee lifecycle management, audit logging, role-based access, and extensible custom tables.
+    public function dashboard(\WP_REST_Request $request): \WP_REST_Response
+    {
+        return new \WP_REST_Response([
+            'success' => true,
+            'data' => [
+                'total_employees' => 0,
+                'active_employees' => 0,
+                'active_contracts' => 0,
+                'total_contracts' => 0,
+                'monthly_payroll' => 0,
+                'pending_payments' => 0,
+                'true_labor_cost' => 0,
+            ],
+        ], 200);
+    }
+
+    public function employees(\WP_REST_Request $request): \WP_REST_Response
+    {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'pcm_employees';
+
+        $rows = $wpdb->get_results(
+            $wpdb->prepare("SELECT * FROM {$table} WHERE deleted_at IS NULL LIMIT %d", 50),
+            ARRAY_A
+        );
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'data' => $rows,
+        ], 200);
+    }
+
+    public function contracts(\WP_REST_Request $request): \WP_REST_Response
+    {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'pcm_contracts';
+
+        $rows = $wpdb->get_results(
+            $wpdb->prepare("SELECT * FROM {$table} WHERE deleted_at IS NULL LIMIT %d", 50),
+            ARRAY_A
+        );
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'data' => $rows,
+        ], 200);
+    }
+
+    public function pay_items(\WP_REST_Request $request): \WP_REST_Response
+    {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'pcm_pay_items';
+        $rows = $wpdb->get_results(
+            $wpdb->prepare("SELECT * FROM {$table} WHERE deleted_at IS NULL LIMIT %d", 50),
+            ARRAY_A
+        );
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'data' => $rows,
+        ], 200);
+    }
+}

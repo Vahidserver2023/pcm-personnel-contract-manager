@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Personnel Contract Manager
  * Description: HR, payroll, contracts, attendance and payroll regulation management for WordPress.
- * Version: 0.1.0
+ * Version: 0.1.1
  * Author: PCM Team
  * Text Domain: pcm
  * Requires at least: 6.4
@@ -28,5 +28,5 @@ if (!defined('PCM_PLUGIN_URL')) {
 require_once PCM_PLUGIN_DIR . 'includes/Plugin.php';
 
 add_action('plugins_loaded', function () {
-    PCM\Plugin::instance();
+    \PCM\Plugin::instance();
 });

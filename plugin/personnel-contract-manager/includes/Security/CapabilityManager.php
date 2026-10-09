@@ -11,6 +11,8 @@ final class Schema
     {
         global $wpdb;
 
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
         $charset_collate = $wpdb->get_charset_collate();
         $table_prefix = $wpdb->prefix . 'pcm_';
 
@@ -44,7 +46,7 @@ final class Schema
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             deleted_at DATETIME DEFAULT NULL,
-            PRIMARY KEY  (id),
+            PRIMARY KEY (id),
             UNIQUE KEY employee_code (employee_code)
         ) {$charset_collate};";
 
@@ -228,7 +230,6 @@ final class Schema
             UNIQUE KEY option_name (option_name)
         ) {$charset_collate};";
 
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta($sql);
     }
 }
