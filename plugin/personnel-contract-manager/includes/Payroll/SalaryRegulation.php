@@ -1,90 +1,34 @@
 <?php
-namespace PCM;
+namespace PCM\Payroll;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-final class Plugin
+final class PayrollAudit
 {
-    private static ?self $instance = null;
-
-    public static function instance(): self
+    public static function log(array $data): void
     {
-        if (is_null(self::$instance)) {
-            self::$instance = new self();
-        }
+        global $wpdb;
 
-        return self::$instance;
-    }
+        $table = $wpdb->prefix . 'pcm_audit_logs';
 
-    private function __construct()
-    {
-        $this->load_dependencies();
-        $this->register_hooks();
-    }
-
-    private function load_dependencies(): void
-    {
-        require_once PCM_PLUGIN_DIR . 'includes/Database/Schema.php';
-        require_once PCM_PLUGIN_DIR . 'includes/Security/CapabilityManager.php';
-        require_once PCM_PLUGIN_DIR . 'includes/Security/NonceValidator.php';
-        require_once PCM_PLUGIN_DIR . 'includes/API/RestBootstrap.php';
-        require_once PCM_PLUGIN_DIR . 'includes/Payroll/SalaryRegulation.php';
-        require_once PCM_PLUGIN_DIR . 'includes/Payroll/PayItem.php';
-        require_once PCM_PLUGIN_DIR . 'includes/Payroll/SalaryCalculationEngine.php';
-        require_once PCM_PLUGIN_DIR . 'includes/Payroll/PayrollService.php';
-    }
-
-    private function register_hooks(): void
-    {
-        register_activation_hook(PCM_PLUGIN_FILE, [$this, 'activate']);
-        register_deactivation_hook(PCM_PLUGIN_FILE, [$this, 'deactivate']);
-
-        add_action('admin_menu', [$this, 'register_admin_menu']);
-        add_action('rest_api_init', [$this, 'register_rest_routes']);
-    }
-
-    public function activate(): void
-    {
-        if (function_exists('dbDelta')) {
-            \PCM\Database\Schema::create_tables();
-        }
-
-        \PCM\Security\CapabilityManager::register_roles_and_capabilities();
-        flush_rewrite_rules();
-    }
-
-    public function deactivate(): void
-    {
-        flush_rewrite_rules();
-    }
-
-    public function register_admin_menu(): void
-    {
-        if (!current_user_can('pcm_manage_employees')) {
-            return;
-        }
-
-        add_menu_page(
-            __('PCM Admin', 'pcm'),
-            __('PCM Admin', 'pcm'),
-            'pcm_manage_employees',
-            'pcm-admin',
-            [$this, 'render_admin_main'],
-            'dashicons-businessperson',
-            26
+        $wpdb->insert(
+            $table,
+            [
+                'user_id' => !empty($data['user_id']) ? absint($data['user_id']) : get_current_user_id(),
+                'action' => sanitize_text_field($data['action'] ?? 'Salary Calculation'),
+                'entity' => sanitize_text_field($data['entity'] ?? 'salary_calculation'),
+                'record_id' => !empty($data['record_id']) ? absint($data['record_id']) : 0,
+                'log_date' => current_time('mysql'),
+                'ip_address' => sanitize_text_field($_SERVER['REMOTE_ADDR'] ?? ''),
+                'user_agent' => sanitize_text_field($_SERVER['HTTP_USER_AGENT'] ?? ''),
+                'old_value' => wp_json_encode($data['old_value'] ?? []),
+                'new_value' => wp_json_encode($data['new_value'] ?? []),
+                'formula' => sanitize_text_field($data['formula'] ?? ''),
+                'regulation_id' => !empty($data['regulation_id']) ? absint($data['regulation_id']) : null,
+            ],
+            ['%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%d']
         );
-    }
-
-    public function render_admin_main(): void
-    {
-        echo '<div class="wrap"><h1>' . esc_html__('PCM Admin', 'pcm') . '</h1><p>' . esc_html__('Admin SPA loads through the React app.', 'pcm') . '</p></div>';
-    }
-
-    public function register_rest_routes(): void
-    {
-        $routes = new \PCM\API\RestBootstrap();
-        $routes->register();
     }
 }
